@@ -15,16 +15,29 @@ logger = logging.getLogger(__name__)
 
 # Connect to MySQL database
 def connect_db():
+    """Connect to MySQL database with error handling."""
     try:
+        # Check if environment variables are set
+        required_env_vars = ["MYSQL_HOST", "MYSQL_USER", "MYSQL_PASSWORD", "MYSQL_DATABASE_NAME"]
+        missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+        
+        if missing_vars:
+            raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
+        # Attempt to connect
         conn = mysql.connector.connect(
             host=os.getenv("MYSQL_HOST"),
             user=os.getenv("MYSQL_USER"),
             password=os.getenv("MYSQL_PASSWORD"),
             port=3306
         )
+        
         cursor = conn.cursor()
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {os.getenv('MYSQL_DATABASE_NAME')}")
-        conn.database = os.getenv('MYSQL_DATABASE_NAME')
+        
+        # Create database if it doesn't exist
+        db_name = os.getenv('MYSQL_DATABASE_NAME')
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
+        conn.database = db_name
         
         # Create users table if it doesn't exist
         cursor.execute("""
@@ -55,8 +68,21 @@ def connect_db():
         
         conn.commit()
         return conn
+        
     except mysql.connector.Error as err:
-        logger.error(f"Database connection error: {err}")
+        error_msg = ""
+        if err.errno == 1045:  # Access denied for user
+            error_msg = f"Access denied for user '{os.getenv('MYSQL_USER')}'. Please check your username and password."
+        elif err.errno == 2003:  # Can't connect to MySQL server
+            error_msg = f"Cannot connect to MySQL server on '{os.getenv('MYSQL_HOST')}'. Is the server running?"
+        else:
+            error_msg = f"MySQL Error: {str(err)}"
+        
+        logger.error(error_msg)
+        raise mysql.connector.Error(error_msg)
+        
+    except Exception as e:
+        logger.error(f"Unexpected error during database connection: {str(e)}")
         raise
 
 def create_user(email, password_hash, name):
