@@ -1,12 +1,13 @@
-from flask import Blueprint, request, jsonify, session
+"""Authentication routes for the application."""
+from flask import Blueprint, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models.user import User
-from app.services.database_service import get_mysql_connection
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
+    """Register a new user."""
     try:
         data = request.get_json()
         email = data.get('email')
@@ -38,6 +39,7 @@ def register():
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
+    """Login a user."""
     try:
         data = request.get_json()
         email = data.get('email')
@@ -66,6 +68,7 @@ def login():
 @auth_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
+    """Logout the current user."""
     try:
         logout_user()
         return jsonify({'message': 'Logged out successfully'}), 200
@@ -75,6 +78,7 @@ def logout():
 @auth_bp.route('/me', methods=['GET'])
 @login_required
 def get_current_user():
+    """Get current user information."""
     return jsonify({
         'user': {
             'id': current_user.id,
