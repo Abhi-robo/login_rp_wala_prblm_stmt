@@ -1,0 +1,7 @@
+git init
+
+git remote add origin https://github.com/<your-github-username>/flask_app.git
+
+git remote add origin https://github.com/Abhi-robo/login_rp_wala_prblm_stmt.git
+
+git remote -v
